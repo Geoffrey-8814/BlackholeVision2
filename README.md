@@ -1,9 +1,6 @@
 # BlackholeVision2
 A FRC vision system
 
-
-Here’s a clearer and more structured version of your setup steps with improved readability and formatting:  
-
 ---
 
 # **BlackholeVision Setup Guide**  
@@ -64,7 +61,27 @@ Here’s a clearer and more structured version of your setup steps with improved
 
 ---
 
-## **Step 5: Setup USB Ports**  
+## **Step 5: Modify the Configuration File**  
+
+1. Open the `config.json` file in a text editor:  
+   **Navigate to the project directory:**  
+   ```bash
+   cd BlackholeVision2
+   ```  
+   ```bash
+   nano config.json
+   ```  
+2. Modify the following fields:
+   - Replace **BlackholeVision** with your **device name**.
+   - Replace **10.12.34.2** with your **roboRIO IP**. Use the following format:
+     - **Team number 4321** → `10.43.21.2`
+     - **Team number 12345** → `10.123.45.2`
+
+3. Save and exit (`CTRL+X`, then `Y`, then `Enter`).  
+
+---
+
+## **Step 6: Setup USB Ports**  
 
 ### **1. Identify Camera USB Ports**  
 1. Connect a camera to your device.  
@@ -100,7 +117,7 @@ ls -l /dev/PORTNAME
 
 ---
 
-## **Step 6: Run `sudo` Without Password**  
+## **Step 7: Run `sudo` Without Password**  
 
 1. Open a terminal and edit the **sudoers** file:  
    ```bash
@@ -119,7 +136,7 @@ ls -l /dev/PORTNAME
 
 ---
 
-## **Step 7: Create a Setup Script**  
+## **Step 8: Create a Setup Script**  
 
 1. Open a terminal and create a script:  
    ```bash
@@ -145,7 +162,7 @@ ls -l /dev/PORTNAME
 
 ---
 
-## **Step 8: Add BlackholeVision to Startup Applications**  
+## **Step 9: Add BlackholeVision to Startup Applications**  
 
 1. Open **Startup Applications** on Ubuntu.  
 2. Click **Add**.  
@@ -157,7 +174,7 @@ ls -l /dev/PORTNAME
 
 ---
 
-## **Step 9: Enable Automatic Login**  
+## **Step 10: Enable Automatic Login**  
 
 Follow [this guide](https://help.ubuntu.com/stable/ubuntu-help/user-autologin.html.en) or:  
 
@@ -170,3 +187,4 @@ Follow [this guide](https://help.ubuntu.com/stable/ubuntu-help/user-autologin.ht
 ---
 
 🚀 **Setup Complete!** Now your **BlackholeVision** system will start automatically upon boot. 🚀
+
