@@ -1,11 +1,6 @@
 # BlackholeVision2
 A FRC vision system
 
-
-Here’s a clearer and more structured version of your setup steps with improved readability and formatting:  
-
----
-
 # **BlackholeVision Setup Guide**  
 
 ## **Step 1: Setup Your Device**  
