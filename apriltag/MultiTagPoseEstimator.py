@@ -13,7 +13,7 @@ class multiTagPoseEstimator:
         self.distortionCoeffs = distortionCoeffs
         self.cameraToRobot = cameraPose.inverse()
         self.cornerPoses:dict={}
-        for tag in tagLayout:
+        for tag in tagLayout: # Licensed under the MIT License (c) 2024 Mechanical-Advantage - https://github.com/Mechanical-Advantage/RobotCode2024/blob/main/LICENSE
             tagPose = convertor.poseDictToWPIPose3d(tag["pose"])
             corner0 = tagPose + Transform3d(Translation3d(0.0, self.tagSize / 2.0, -self.tagSize / 2.0), Rotation3d())
             corner1 = tagPose + Transform3d(Translation3d(0.0, -self.tagSize / 2.0, -self.tagSize / 2.0), Rotation3d())
