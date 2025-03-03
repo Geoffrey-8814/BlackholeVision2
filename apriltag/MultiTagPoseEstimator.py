@@ -11,7 +11,7 @@ class multiTagPoseEstimator:
 
         self.cameraMatrixs= cameraMatrix
         self.distortionCoeffs = distortionCoeffs
-        self.cameraToRobot = cameraPose
+        self.cameraToRobot = cameraPose.inverse()
         self.cornerPoses:dict={}
         for tag in tagLayout:
             tagPose = convertor.poseDictToWPIPose3d(tag["pose"])
