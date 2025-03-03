@@ -64,10 +64,6 @@ A FRC vision system
 ## **Step 5: Modify the Configuration File**  
 
 1. Open the `config.json` file in a text editor:  
-   **Navigate to the project directory:**  
-   ```bash
-   cd BlackholeVision2
-   ```  
    ```bash
    nano config.json
    ```  
