@@ -11,7 +11,9 @@ class cameraWorker(process):
         
     def setupCamera(self, id, resolution, configTensor):
         camera = cv2.VideoCapture()
-        if id == "test1":
+        if id == "test0":
+            id = 0
+        elif id == "test1":
             id = 1
         else:
             id = '/dev/' + id
