@@ -11,7 +11,7 @@ model.to('cuda')
 
 
 # initialize camera
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc(*'MJPG'))#without this the cap will run at 5 or 10fps for arducam
 cap.set(cv2.CAP_PROP_SETTINGS, 0)#reset to default
 cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3) # auto mode
@@ -28,6 +28,12 @@ while True:
         break
     
     results = model(frame)
+    boxes = results[0].boxes
+    for box in boxes:
+        print(box.xywh[0])
+    # print('boxes:')
+    # print(boxes[0].xywh[0])
+
     # Plot the results on the image
     annotated_frame = results[0].plot()
 
