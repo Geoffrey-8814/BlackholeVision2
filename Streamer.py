@@ -5,7 +5,7 @@ from http import HTTPStatus
 from io import BytesIO
 
 class CameraStreamer:
-    def __init__(self, frame_tensors, port=5000, resolution=(640, 480)):
+    def __init__(self, camera_index=0, port=5000, resolution=(640, 480)):
         """
         Initialize the camera streamer.
         
@@ -13,18 +13,23 @@ class CameraStreamer:
         :param port: Port to run the HTTP server on.
         :param resolution: Resolution of the streamed video (width, height).
         """
-        self.frame_tensor = frame_tensors['frame']
+        self.camera_index = camera_index
         self.port = port
         self.resolution = resolution
+        self.camera = cv2.VideoCapture(self.camera_index)
         self.server = None
 
     def __del__(self):
         """Release the camera when the object is deleted."""
+        if self.camera.isOpened():
+            self.camera.release()
 
     def _generate_frames(self):
         """Generate frames from the camera and encode them as JPEG."""
         while True:
-            frame = self.frame_tensor.cpu().numpy()
+            success, frame = self.camera.read()
+            if not success:
+                break
 
             # Resize the frame to the specified resolution
             frame = cv2.resize(frame, self.resolution)
@@ -98,7 +103,7 @@ class CameraStreamer:
 if __name__ == '__main__':
     try:
         # Initialize the streamer with camera index 0, port 5000, and resolution 640x480
-        streamer = CameraStreamer(camera_index=1, port=5000, resolution=(640, 480))
+        streamer = CameraStreamer(camera_index=0, port=5000, resolution=(640, 480))
         streamer.start()
     except KeyboardInterrupt:
         streamer.stop()
