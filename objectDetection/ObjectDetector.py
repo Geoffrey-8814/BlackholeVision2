@@ -1,12 +1,14 @@
 import cv2
 import numpy as np
 from ultralytics import YOLO
+import torch
 
 
 class objectDetector:
     def __init__(self, modelPath, conf) -> None:
         self.model: YOLO = YOLO(modelPath)
-        self.model.to('cuda') #TODO
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model.to(device) #TODO
         self.conf = conf
     
     def __call__(self, frame):
