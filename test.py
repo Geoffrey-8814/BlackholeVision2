@@ -23,6 +23,8 @@ cap.set(cv2.CAP_PROP_EXPOSURE, 4)# Set exposure value
 cap.set(cv2.CAP_PROP_GAIN, 0)# Set sensor gain
 while True:
     ret, frame = cap.read()
+    print("Frame shape:", frame.shape)
+    print("Frame dtype:", frame.dtype)
     if not ret:
         print("read failed")
         break

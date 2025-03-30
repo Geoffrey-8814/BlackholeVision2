@@ -22,7 +22,7 @@ if __name__ == "__main__":
     posePublishersThreads: dict = {}
     objPosePublishersThreads: dict = {}
     
-    detectionModel = None
+    detectionModel = "objectDetection\\weights\\last.pt"
     
     _configGenerator.updateDynamicConfig(camerasConfigTensors, apriltagConfigTensors)
     for name in config['camerasName']:
@@ -36,9 +36,6 @@ if __name__ == "__main__":
             posePublishersThreads[name] = publishThread(posePublishers[name], poseTensors[name], poseEvents[name]['publish'])
         
         if config[name]["enableObj"]:
-            if detectionModel == None:
-                detectionModel = YOLO("objectDetection\\weights\\last.pt")
-                detectionModel.to('cuda')#TODO
             objDetectionWorkers[name] = objectDetectionWorker(detectionModel, cameraConfig['cameraMatrix'], cameraConfig['distortionCoeffs'], 
                                                 captureTensors[name], objPoseTensors[name], captureEvents[name]['ML'], objPoseEvents[name])
             objPosePublishersThreads[name] = publishThread(objPosePublishers[name], objPoseTensors[name], objPoseEvents[name]['publish'])
