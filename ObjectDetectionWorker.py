@@ -13,9 +13,10 @@ class objectDetectionWorker(process):
         super().__init__(args, inputTensors, outputTensors, waitEvent, setEvents)
     
     def setup(self, model, cameraMatrix, distortionCoeffs, configTensor):
-        _detector = objectDetector(model)
+        _detector = objectDetector(model, 0.25)#TODO add conf to arguments
         cameraPose = convertor.pose3dToTransform3d(convertor.listToRobotPose(configTensor.cpu().numpy()))
-        _coralPoseEstimator = multiTagPoseEstimator(cameraMatrix, distortionCoeffs, cameraPose)#TODO
+        # _coralPoseEstimator = multiTagPoseEstimator(cameraMatrix, distortionCoeffs, cameraPose)#TODO
+        _coralPoseEstimator = 1 #TODO
         
         return _detector, _coralPoseEstimator
         
@@ -30,14 +31,12 @@ class objectDetectionWorker(process):
         frame = inputTensors['frame'].cpu().numpy()
         
         ids, boxes = _detector(frame)
-        pose, error = _coralPoseEstimator(ids, boxes)
-        
-        poseTensor = convertor.robotPoseToTensor(pose)
-        errorTensor = torch.tensor([error if error else -1])
+        # pose, error = _coralPoseEstimator(ids, boxes)
         
         # print(poseTensor)
-        output = {'coralPose': poseTensor,
-                'algaePose': errorTensor,
+        output = {'coralPoses': torch.zeros(40), # [x, y, Theta 1, Theta 2] * 10 TODO
+                'coralErrors': torch.zeros(10),
+                'algaePoses': torch.zeros(20), # [x, y] * 10
                 'latency': inputTensors['metaData']}
         
         return output, (model, cameraMatrix, distortionCoeffs, currentConfig, _detector, _coralPoseEstimator)

@@ -41,6 +41,10 @@ class configGenerator:
         self.gain_subs: dict = {}
         self.maxFPS_subs: dict = {}
         
+        self.enableTag_subs: dict = {}
+        self.enableObj_subs: dict = {}
+        
+        
         self.waitConfig()
         self.setup_subs()
         
@@ -76,6 +80,10 @@ class configGenerator:
             self.exposure_subs[name] = self.nt_table.getDoubleTopic(name + "/exposure").subscribe(0)
             self.gain_subs[name] = self.nt_table.getDoubleTopic(name + "/gain").subscribe(0)
             self.maxFPS_subs[name] = self.nt_table.getDoubleTopic(name + "/maxFPS").subscribe(0)
+            
+            self.enableTag_subs[name] = self.nt_table.getBooleanTopic(name + "/enableTag").subscribe(False)
+            self.enableObj_subs[name] = self.nt_table.getBooleanTopic(name + "/enableObj").subscribe(False)
+            
     def getStaticConfig(self):
         self.config['tagLayout'] = json.loads(self.tagLayout_sub.get())["tags"]
         self.config['tagSize'] = self.tagSize_sub.get()
@@ -85,6 +93,9 @@ class configGenerator:
             self.config[name]["cameraMatrix"] = np.array(self.cameraMatrix_subs[name].get()).reshape(3,3)
             self.config[name]["distortionCoeffs"] = np.array(self.distortionCoeffs_subs[name].get())
             self.config[name]["resolution"] = self.resolution_subs[name].get()
+            
+            self.config[name]["enableTag"] = self.enableTag_subs[name].get()
+            self.config[name]["enableObj"] = self.enableObj_subs[name].get()
         
     def getDynamicConfig(self):
         for name in self.camerasName:
@@ -115,6 +126,20 @@ class configGenerator:
                 ntcore.PubSubOptions(periodic=0, sendAll=True, keepDuplicates=True))
         return self.posePublishers
     
+    def getObjPosePublishers(self):
+        self.posePublishers: dict = {}
+        for name in self.camerasName:
+            self.posePublishers[name] = {}
+            self.posePublishers[name]['coralPoses'] = self.nt_table.getDoubleArrayTopic(name + '/coralPoses').publish(
+                ntcore.PubSubOptions(periodic=0, sendAll=True, keepDuplicates=True))
+            self.posePublishers[name]['coralErrors'] = self.nt_table.getDoubleArrayTopic(name + '/coralErrors').publish(
+                ntcore.PubSubOptions(periodic=0, sendAll=True, keepDuplicates=True))
+            self.posePublishers[name]['algaePoses'] = self.nt_table.getDoubleArrayTopic(name + '/algaePoses').publish(
+                ntcore.PubSubOptions(periodic=0, sendAll=True, keepDuplicates=True))
+            self.posePublishers[name]['latency']= self.nt_table.getDoubleTopic(name + '/latency').publish(
+                ntcore.PubSubOptions(periodic=0, sendAll=True, keepDuplicates=True))
+        return self.posePublishers
+    
     def getSharedTensorsAndEvents(self):
         camerasConfigTensors = {}
         captureTensors = {}
@@ -122,6 +147,10 @@ class configGenerator:
         apriltagConfigTensors = {}
         poseTensors = {}
         poseEvents = {}
+        
+        objPoseTensors = {}
+        objPoseEvents = {}
+        
         
         for name in self.camerasName:
             resolution = self.config[name]['resolution']
@@ -149,4 +178,16 @@ class configGenerator:
             poseEvents[name] = {
                 'publish': mp.Event(),
             }
-        return camerasConfigTensors, captureTensors, captureEvents, apriltagConfigTensors, poseTensors, poseEvents
+            
+            objPoseTensors[name] =  Process.getSharedTensors({
+                'coralPoses': (40), # [x, y, Theta 1, Theta 2] * 10
+                'coralErrors': (10),
+                'algaePoses': (20), # [x, y] * 10
+                'latency': (1),
+            })
+            
+            objPoseEvents[name] = {
+                'publish': mp.Event(),
+            }
+            
+        return camerasConfigTensors, captureTensors, captureEvents, apriltagConfigTensors, poseTensors, poseEvents, objPoseTensors, objPoseEvents

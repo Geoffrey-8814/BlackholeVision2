@@ -1,16 +1,19 @@
 import cv2
 import numpy as np
+from ultralytics import YOLO
+
 
 class objectDetector:
-    def __init__(self, model) -> None:
+    def __init__(self, model: YOLO, conf) -> None:
         self.model = model
+        self.conf = conf
     
     def __call__(self, frame):
         ids = []
         boxes = []
         frame = (frame * 255).astype('uint8')
         
-        results = self.model(frame)
+        results = self.model.predict(frame, conf = self.conf)
         
         boxesResults = results[0].boxes
         
