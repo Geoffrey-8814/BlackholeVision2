@@ -8,7 +8,7 @@ class objectDetector:
     def __init__(self, modelPath, conf) -> None:
         self.model: YOLO = YOLO(modelPath)
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model.to(device) #TODO
+        self.model.to(device)
         self.conf = conf
     
     def __call__(self, frame):
