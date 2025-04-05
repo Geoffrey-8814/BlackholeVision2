@@ -5,7 +5,7 @@ import torch
 import convertor
 
 from objectDetection.ObjectDetector import objectDetector
-
+from objectDetection.ObjectDetector import multiTagPoseEstimator
 class objectDetectionWorker(process):
     def __init__(self, modelPath, cameraMatrix, distortionCoeffs, inputTensors, outputTensors, waitEvent, setEvents):
         args = (modelPath, cameraMatrix, distortionCoeffs, None, None, None)
@@ -15,8 +15,7 @@ class objectDetectionWorker(process):
     def setup(self, modelPath, cameraMatrix, distortionCoeffs, configTensor):
         _detector = objectDetector(modelPath, 0.25)#TODO add conf to arguments
         cameraPose = convertor.pose3dToTransform3d(convertor.listToRobotPose(configTensor.cpu().numpy()))
-        # _coralPoseEstimator = multiTagPoseEstimator(cameraMatrix, distortionCoeffs, cameraPose)#TODO
-        _coralPoseEstimator = 1 #TODO
+        _coralPoseEstimator = multiTagPoseEstimator(cameraMatrix, distortionCoeffs, cameraPose)#TODO
         
         return _detector, _coralPoseEstimator
         
@@ -31,7 +30,7 @@ class objectDetectionWorker(process):
         frame = inputTensors['frame'].cpu().numpy()
         
         ids, boxes = _detector(frame)
-        # pose, error = _coralPoseEstimator(ids, boxes)
+        pose, error = _coralPoseEstimator(ids, boxes)
         
         # print(poseTensor)
         output = {'coralPoses': torch.zeros(40), # [x, y, Theta 1, Theta 2] * 10 TODO

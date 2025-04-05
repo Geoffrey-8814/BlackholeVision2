@@ -1,0 +1,181 @@
+import cv2
+import numpy as np
+from wpimath.geometry import *
+import convertor
+import math
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+
+# 初始化可视化
+plt.ion()  # 开启交互模式
+fig, ax = plt.subplots()
+ax.set_title('Orientation Solutions')
+ax.set_xlim(-0.3, 0.3)  # 根据实际尺寸调整
+ax.set_ylim(-0.3, 0.3)
+ax.grid(True)
+ax.set_aspect('equal')
+
+# 创建可视化元素
+line_ccw = ax.add_line(Line2D([], [], color='blue', lw=2, label='Counter Clockwise'))
+line_cw = ax.add_line(Line2D([], [], color='red', lw=2, label='Clockwise'))
+ax.legend()
+
+
+class Camera2World:
+    def __init__(self, camera_matrix, distortion, height, pitch):
+        self.camera_matrix = camera_matrix
+        self.distortion = distortion
+        self.height = height
+        self.pitch = pitch
+
+    def getAngle(self, x, y):
+        # calculate angle from pixel on the frame
+        image_points = np.array([[x, y]], dtype=np.float32)
+        normalized_points = cv2.undistortPoints(image_points, self.camera_matrix, self.distortion)
+        normalized_corrected_x = normalized_points[0][0][0]
+        normalized_corrected_y = normalized_points[0][0][1]
+        angle_x = -np.arctan(normalized_corrected_x)
+        angle_y = np.arctan(normalized_corrected_y)
+        return angle_x, angle_y
+
+    def normalizeAngle(self, cameraRotationToRobot: Rotation3d, objectAngleToCamera: Rotation3d):
+        # convert object to camera angle to object to robot angle
+        objectAngleToRobot = objectAngleToCamera.rotateBy(convertor.inverseRotation(cameraRotationToRobot))
+        return objectAngleToRobot
+
+    def getObjectToCameraPose(self, u_center, v_center):
+        # calculate object position in camera coordinates
+        angle_x, angle_y = self.getAngle(u_center, v_center)
+        #print(angle_x, angle_y)
+        ty = self.normalizeAngle(Rotation3d(0, self.pitch, 0), Rotation3d(0, angle_y, 0)).Y()
+        x = self.height / np.tan(ty)
+        y = x * np.tan(angle_x)
+        return Translation2d(x, y)
+
+def update_visualization(angle_ccw, angle_cw, coral_radius=0.2):
+    """
+    更新可视化图表
+    参数：
+    angle_ccw : 逆时针解（度）
+    angle_cw  : 顺时针解（度）
+    coral_radius : 圆柱体半径（米）
+    """
+    # 转换为弧度
+    theta_ccw = np.deg2rad(angle_ccw)
+    theta_cw = np.deg2rad(angle_cw)
+    
+    # 计算线段端点（长度=直径）
+    length = 2 * coral_radius
+    x_ccw = length * np.cos(theta_ccw)
+    y_ccw = length * np.sin(theta_ccw)
+    x_cw = length * np.cos(theta_cw)
+    y_cw = length * np.sin(theta_cw)
+    
+    # 更新线段
+    line_ccw.set_data([-x_ccw/2, x_ccw/2], [-y_ccw/2, y_ccw/2])  # 居中显示
+    line_cw.set_data([-x_cw/2, x_cw/2], [-y_cw/2, y_cw/2])
+    
+    # 重绘图
+    fig.canvas.draw()
+    fig.canvas.flush_events()
+
+def clamp(value, min_value, max_value):
+    print("domain error")
+    #print("out of range, may because of too small angle with the horizontal, changing the sin value to 1 or -1")
+    return max(min_value, min(max_value, value))
+
+# 示例用法
+if __name__ == "__main__":
+    def get_diagonal_info(width, height):
+        # 1. 对角线长度（勾股定理）
+        diagonal = math.hypot(width, height)
+
+        # 2. 对角线与水平线的夹角（单位：度）
+        angle_rad = math.atan(width / height)*2  # 保证小于45°
+        angle_deg = math.degrees(angle_rad)
+
+        return diagonal, angle_rad
+    def getAngle(m1, m2):
+        denominator = 1 + m1 * m2
+        if denominator == 0:
+            angle_rad = math.pi / 2  # 90度
+        else:
+            tan_theta = abs((m1 - m2) / denominator)
+            angle_rad = math.atan(tan_theta)
+
+        angle_deg = math.degrees(angle_rad)
+
+        #print(f"夹角为: {angle_deg:.2f} 度")
+        return angle_rad
+    camera_matrix = np.array([ [905.32671946,0,679.6204086 ],
+ [ 0,906.14946047,331.96782248],
+ [  0,0,1]])
+    distortion = np.array( [ 0.02907126, -0.03349167,  0.00055539, -0.00029301, -0.02025189])
+    height = 0.383
+    coral_radius=0.055
+    coral_length=0.3
+    pitch = np.deg2rad(0)  # 30度俯仰角
+
+    OFFSET_ANGLE = 0 # Predefined offset angle in degrees
+
+    # u_center, v_center, box_length = 637.2025, 527.5719, 195.9233
+    u_center, v_center, box_length = 306.3561, 531.6138, 219.1818
+    # u_center, v_center, box_length = 649.2028, 534.6991,  80.0308
+
+
+    coral_width=coral_radius*2
+    coral_diagonal_length, coral_diagonal_angle=get_diagonal_info(coral_width,coral_length)
+    center_height=height-coral_radius
+    left_midpoint=u_center-box_length/2
+    right_midpoint=u_center+box_length/2
+
+    camera2world = Camera2World(camera_matrix, distortion, center_height, pitch)
+    coral_center_point = camera2world.getObjectToCameraPose(u_center, v_center)
+    print(f"Coral Center coordinates: {coral_center_point}")
+    
+    camera2world = Camera2World(camera_matrix, distortion, height, pitch)
+    left_midpoint_world = camera2world.getObjectToCameraPose(left_midpoint, v_center)
+    print(f"Left midpoint coordinates: {left_midpoint_world}")
+
+    camera2world = Camera2World(camera_matrix, distortion, height, pitch)
+    right_midpoint_world = camera2world.getObjectToCameraPose(right_midpoint, v_center)
+    print(f"Right midpoint coordinates: {right_midpoint_world}")
+
+    left_bound_coefficient=left_midpoint_world.Y()/left_midpoint_world.X()
+    right_bound_coefficient=right_midpoint_world.Y()/right_midpoint_world.X()
+    middle_bound_coefficient=coral_center_point.Y()/coral_center_point.X()
+    print(f"Left bound coefficient: y={left_bound_coefficient}x")
+    print(f"Right bound coefficient: y={right_bound_coefficient}x")
+    print(f"Middle bound coefficient: y={middle_bound_coefficient}x")
+    middletocameraangle=getAngle(middle_bound_coefficient,0)
+    print(np.rad2deg(middletocameraangle))
+    print(f"Middle to camera angle: y={middletocameraangle}x")
+#情况1
+    def calculate_angle(middle_bound_coefficient, side_bound_coefficient, secondSolution):
+        bound_angle=getAngle(middle_bound_coefficient,side_bound_coefficient)
+        print("bound angle")
+        print(np.rad2deg(bound_angle))
+        sin_rule_common=math.sin(bound_angle)/(coral_diagonal_length/2)
+        distance_to_center=math.sqrt(coral_center_point.X()**2 + coral_center_point.Y()**2)
+        print(distance_to_center)
+        print("sin rule common")
+        print(sin_rule_common)
+        sin_upper_angle = clamp(distance_to_center * sin_rule_common, -1, 1)
+        print("sin upper angle")
+        print(sin_upper_angle)
+        upper_angle=math.asin(sin_upper_angle)
+        print(upper_angle)
+        if secondSolution:
+            upper_angle=math.pi-upper_angle
+            upper_angle+=coral_diagonal_angle/2
+        else:
+            upper_angle-=coral_diagonal_angle/2
+        diagonal_to_optical_axis_angle=upper_angle+bound_angle
+        return diagonal_to_optical_axis_angle+middletocameraangle
+    first_angle=calculate_angle(middle_bound_coefficient,right_bound_coefficient, False)
+    second_angle=calculate_angle(middle_bound_coefficient,left_bound_coefficient, True)
+
+    # update_visualization(np.rad2deg(first_angle), np.rad2deg(second_angle))
+    update_visualization(np.rad2deg(first_angle) + 90, np.rad2deg(second_angle)+90)
+
+    input("pause")

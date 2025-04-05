@@ -31,3 +31,30 @@ class objectDetector:
             ids.append(int(box.cls))
         
         return ids, boxes
+
+class multiTagPoseEstimator:
+    def __init__(self, cameraMatrix, distortionCoeffs, cameraPose) -> None:
+        self.cameraMatrix = cameraMatrix
+        self.distortionCoeffs = distortionCoeffs
+        self.cameraPose = cameraPose
+    
+    def __call__(self, ids, boxes):
+        ids = []
+        boxes = []
+        frame = (frame * 255).astype('uint8')
+        results = self.model.predict(frame, conf = self.conf)
+        
+        boxesResults = results[0].boxes
+        
+        # annotated_frame = results[0].plot()
+
+        # # Display the annotated image
+        # cv2.imshow('YOLO Detection', annotated_frame)
+            
+        # key = cv2.waitKey(1)
+        
+        for box in boxesResults:
+            boxes.append(box.xywh[0].cpu().numpy().tolist())
+            ids.append(int(box.cls))
+        
+        return ids, boxes
