@@ -19,7 +19,7 @@ cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1) # manual mode
 
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)# set frame height
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)# set frame width
-cap.set(cv2.CAP_PROP_EXPOSURE, -10)# Set exposure value
+cap.set(cv2.CAP_PROP_EXPOSURE, -9)# Set exposure value
 cap.set(cv2.CAP_PROP_GAIN, 0)# Set sensor gain
 while True:
     ret, frame = cap.read()
