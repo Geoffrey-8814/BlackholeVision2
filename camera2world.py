@@ -170,7 +170,7 @@ class Camera2World:
         return Translation2d(x, y)
 
 class coralPositionEstimator:
-    def __init__(self, cameraMatrix, distortionCoeffs, cameraPose: Pose3d) -> None:
+    def __init__(self, cameraMatrix, distortionCoeffs, cameraPose: Transform3d) -> None:
         self.cameraMatrix = cameraMatrix
         self.distortionCoeffs = distortionCoeffs
         self.cameraPose = cameraPose
@@ -183,10 +183,17 @@ class coralPositionEstimator:
         """Convert object-to-camera angle to object-to-robot angle in 2D."""
         return objectAngleToCamera.rotateBy(cameraYaw)
 
-    def transformCoordinates2D(self, cameraPose: Pose2d, objectTranslation: Translation2d):
+    def transformCoordinates2D(self, cameraPose: Transform3d, objectTranslation: Translation2d):
         """Transform object coordinates from camera frame to robot frame in 2D."""
-        transform = Transform2d(cameraPose.translation(), cameraPose.rotation())
-        return transform.transformBy(Transform2d(objectTranslation, Rotation2d(0))).translation()
+        # Extract 2D translation (X, Y) and yaw (rotation around Z-axis) from the 3D transform
+        camera_translation_2d = Translation2d(cameraPose.translation().x, cameraPose.translation().y)
+        camera_yaw = cameraPose.rotation().toRotation2d()
+
+        # Create a Transform2d for the camera's 2D pose
+        camera_pose_2d = Transform2d(camera_translation_2d, camera_yaw)
+
+        # Transform the object's 2D translation to the robot's frame
+        return camera_pose_2d.transformBy(Transform2d(objectTranslation, Rotation2d(0))).translation()
 
     def __call__(self, ids, boxes):
         results = []
@@ -207,9 +214,8 @@ class coralPositionEstimator:
             cw_robot = self.normalizeAngle2D(camera_yaw, Rotation2d(cw)).radians()
 
             # Convert coordinates to robot's reference frame (2D transformation)
-            camera_pose_2d = self.cameraPose.toPose2d()
             object_translation = Translation2d(x, y)
-            robot_translation = self.transformCoordinates2D(camera_pose_2d, object_translation)
+            robot_translation = self.transformCoordinates2D(self.cameraPose, object_translation)
 
             results.append([robot_translation.X(), robot_translation.Y(), ccw_robot, cw_robot])
             print(f"ID: {obj_id}, Robot Coordinates: ({robot_translation.X():.2f}, {robot_translation.Y():.2f}), "
