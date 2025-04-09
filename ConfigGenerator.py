@@ -180,7 +180,7 @@ class configGenerator:
             }
             
             objPoseTensors[name] =  Process.getSharedTensors({
-                'coralPoses': (40), # [x, y, Theta 1, Theta 2] * 10
+                'coralPoses': (10,4), # [x, y, Theta 1, Theta 2] * 10
                 'coralErrors': (10),
                 'algaePoses': (20), # [x, y] * 10
                 'latency': (1),
