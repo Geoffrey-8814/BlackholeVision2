@@ -5,9 +5,10 @@ import math
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import convertor,time
+import torch  # Add this import for tensor operations
 
 class CoralOrientationSolver:
-    def __init__(self, camera_matrix, distortion, height, coral_radius, coral_length, pitch, offset_angle=0):
+    def __init__(self, camera_matrix, distortion, height, pitch, coral_radius, coral_length, offset_angle=0, enable_visualization=True):
         # 初始化相机和物理参数
         self.camera_matrix = camera_matrix
         self.distortion = distortion
@@ -16,6 +17,7 @@ class CoralOrientationSolver:
         self.coral_length = coral_length
         self.pitch = pitch
         self.offset_angle = offset_angle
+        self.enable_visualization = enable_visualization  # Add visualization toggle
 
         # 预计算珊瑚几何参数
         self.coral_width = coral_radius * 2
@@ -23,9 +25,10 @@ class CoralOrientationSolver:
             self.coral_width, self.coral_length)
 
         # 初始化可视化
-        plt.ion()
-        self.fig, self.ax = plt.subplots()
-        self._init_visualization()
+        if self.enable_visualization:
+            plt.ion()
+            self.fig, self.ax = plt.subplots()
+            self._init_visualization()
 
     def _init_visualization(self):
         """初始化可视化组件"""
@@ -66,6 +69,8 @@ class CoralOrientationSolver:
 
     def _update_visualization(self, angle_ccw_deg, angle_cw_deg):
         """更新可视化显示"""
+        if not self.enable_visualization:  # Skip if visualization is disabled
+            return
         # 转换为极坐标
         theta_ccw = np.deg2rad(angle_ccw_deg)
         theta_cw = np.deg2rad(angle_cw_deg)
@@ -136,7 +141,8 @@ class CoralOrientationSolver:
         # 更新可视化
         self._update_visualization(final_ccw+90, final_cw+90)
 
-        return final_ccw, final_cw
+        # 返回角度和中心点坐标
+        return final_ccw, final_cw, center_point.X(), center_point.Y()
 
 # 保留原始Camera2World类
 class Camera2World:
@@ -164,6 +170,38 @@ class Camera2World:
         y = x * np.tan(angle_x)
         return Translation2d(x, y)
 
+class coralPositionEstimator:
+    def __init__(self, cameraMatrix, distortionCoeffs, cameraPose:Pose3d) -> None:
+        self.cameraMatrix = cameraMatrix
+        self.distortionCoeffs = distortionCoeffs
+        self.cameraPose = cameraPose
+        self.solver = CoralOrientationSolver(
+            cameraMatrix, distortionCoeffs, cameraPose.translation().z, cameraPose.rotation().y, coral_radius=0.055, coral_length=0.3, enable_visualization=False
+        )
+        self.target_id = 1  # Replace with the specific ID to filter
+
+    def __call__(self, ids, boxes):
+        results = []
+        for obj_id, box in zip(ids, boxes):
+            if obj_id != self.target_id:
+                continue  # Skip if ID does not match the target
+
+            u_center = box[0] + box[2] / 2  # x + width / 2
+            v_center = box[1] + box[3] / 2  # y + height / 2
+            box_length = max(box[2], box[3])  # Use the larger dimension as box length
+
+            # Solve orientation
+            ccw, cw, x, y = self.solver.solve(u_center, v_center, box_length)
+            results.append([x, y, ccw, cw])
+            print(f"ID: {obj_id}, 逆时针解：{ccw:.2f}°，顺时针解：{cw:.2f}°，中心点坐标：({x:.2f}, {y:.2f})")
+        while len(results) < 10:
+            results.append([-9999, -9999, -9999, -9999])
+        
+        # Convert results to a tensor
+        result_tensor = torch.tensor(results, dtype=torch.float32)
+
+        return result_tensor
+
 # 示例用法
 if __name__ == "__main__":
     # 初始化参数
@@ -171,30 +209,21 @@ if __name__ == "__main__":
                              [0, 906.14946047, 331.96782248],
                              [0, 0, 1]])
     distortion = np.array([0.02907126, -0.03349167, 0.00055539, -0.00029301, -0.02025189])
-    height = 0.383
-    coral_radius = 0.055
-    coral_length = 0.3
-    pitch = np.deg2rad(0)
+    camera_pose = None  # Replace with actual camera pose if needed
 
-    # 创建求解器实例
-    solver = CoralOrientationSolver(camera_matrix, distortion, height,
-                                  coral_radius, coral_length, pitch)
+    # 创建估计器实例
+    estimator = coralPositionEstimator(camera_matrix, distortion, camera_pose)
 
     # 输入检测数据
-    u_center, v_center, box_length = 306.3561, 531.6138, 219.1818
+    ids = [42, 7, 42]  # Example IDs
+    boxes = [
+        [306, 531, 219, 219],  # Example box for ID 42
+        [100, 200, 50, 50],    # Example box for ID 7
+        [135, 534, 176, 176]   # Example box for ID 42
+    ]
 
-    # 求解并可视化
-    ccw, cw = solver.solve(u_center, v_center, box_length)
-    print(f"逆时针解：{ccw:.2f}°，顺时针解：{cw:.2f}°")
-    
-    
-    time.sleep(5)
-    u_center, v_center, box_length = 135.0338, 534.0199, 175.6627
-
-    # 求解并可视化
-    ccw, cw = solver.solve(u_center, v_center, box_length)
-
-
+    # 调用估计器
+    results = estimator(ids, boxes)
 
     # 保持窗口打开
     input("按Enter键退出...")
