@@ -170,7 +170,7 @@ class Camera2World:
         return Translation2d(x, y)
 
 class coralPositionEstimator:
-    def __init__(self, cameraMatrix, distortionCoeffs, cameraPose:Pose3d) -> None:
+    def __init__(self, cameraMatrix, distortionCoeffs, cameraPose: Pose3d) -> None:
         self.cameraMatrix = cameraMatrix
         self.distortionCoeffs = distortionCoeffs
         self.cameraPose = cameraPose
@@ -178,6 +178,15 @@ class coralPositionEstimator:
             cameraMatrix, distortionCoeffs, cameraPose.translation().z, cameraPose.rotation().y, coral_radius=0.055, coral_length=0.3, enable_visualization=False
         )
         self.target_id = 1  # Replace with the specific ID to filter
+
+    def normalizeAngle2D(self, cameraYaw: Rotation2d, objectAngleToCamera: Rotation2d):
+        """Convert object-to-camera angle to object-to-robot angle in 2D."""
+        return objectAngleToCamera.rotateBy(cameraYaw)
+
+    def transformCoordinates2D(self, cameraPose: Pose2d, objectTranslation: Translation2d):
+        """Transform object coordinates from camera frame to robot frame in 2D."""
+        transform = Transform2d(cameraPose.translation(), cameraPose.rotation())
+        return transform.transformBy(Transform2d(objectTranslation, Rotation2d(0))).translation()
 
     def __call__(self, ids, boxes):
         results = []
@@ -191,8 +200,20 @@ class coralPositionEstimator:
 
             # Solve orientation
             ccw, cw, x, y = self.solver.solve(u_center, v_center, box_length)
-            results.append([x, y, ccw, cw])
-            print(f"ID: {obj_id}, 逆时针解：{np.rad2deg(ccw):.2f}°，顺时针解：{np.rad2deg(cw):.2f}°，中心点坐标：({x:.2f}, {y:.2f})")
+
+            # Convert angles to robot's reference frame (2D rotation)
+            camera_yaw = self.cameraPose.rotation().toRotation2d()
+            ccw_robot = self.normalizeAngle2D(camera_yaw, Rotation2d(ccw)).radians()
+            cw_robot = self.normalizeAngle2D(camera_yaw, Rotation2d(cw)).radians()
+
+            # Convert coordinates to robot's reference frame (2D transformation)
+            camera_pose_2d = self.cameraPose.toPose2d()
+            object_translation = Translation2d(x, y)
+            robot_translation = self.transformCoordinates2D(camera_pose_2d, object_translation)
+
+            results.append([robot_translation.X(), robot_translation.Y(), ccw_robot, cw_robot])
+            print(f"ID: {obj_id}, Robot Coordinates: ({robot_translation.X():.2f}, {robot_translation.Y():.2f}), "
+                  f"CCW Angle: {np.rad2deg(ccw_robot):.2f}°, CW Angle: {np.rad2deg(cw_robot):.2f}°")
         while len(results) < 10:
             results.append([-9999, -9999, -9999, -9999])
         
