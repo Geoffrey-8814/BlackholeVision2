@@ -189,11 +189,11 @@ class coralPositionEstimator:
         camera_translation_2d = Translation2d(cameraPose.translation().x, cameraPose.translation().y)
         camera_yaw = cameraPose.rotation().toRotation2d()
 
-        # Create a Transform2d for the camera's 2D pose
-        camera_pose_2d = Transform2d(camera_translation_2d, camera_yaw)
+        # Apply the 2D transformation manually
+        rotated_translation = objectTranslation.rotateBy(camera_yaw)
+        transformed_translation = camera_translation_2d + rotated_translation
 
-        # Transform the object's 2D translation to the robot's frame
-        return camera_pose_2d.transformBy(Transform2d(objectTranslation, Rotation2d(0))).translation()
+        return transformed_translation
 
     def __call__(self, ids, boxes):
         results = []
