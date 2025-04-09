@@ -134,15 +134,14 @@ class CoralOrientationSolver:
         angle_ccw = calculate_angle(center_slope, right_slope, False)
         angle_cw = calculate_angle(center_slope, left_slope, True)
 
-        # 转换为角度并应用偏移
-        final_ccw = np.rad2deg(angle_ccw) + self.offset_angle
-        final_cw = np.rad2deg(angle_cw) + self.offset_angle
+        # 更新可视化 (convert radians to degrees for visualization)
+        self._update_visualization(np.rad2deg(angle_ccw) + 90, np.rad2deg(angle_cw) + 90)
 
-        # 更新可视化
-        self._update_visualization(final_ccw+90, final_cw+90)
+        # 打印输出仍然是度数
+        print(f"逆时针解：{np.rad2deg(angle_ccw):.2f}°，顺时针解：{np.rad2deg(angle_cw):.2f}°，中心点坐标：({center_point.X():.2f}, {center_point.Y():.2f})")
 
-        # 返回角度和中心点坐标
-        return final_ccw, final_cw, center_point.X(), center_point.Y()
+        # 返回角度（弧度）和中心点坐标
+        return angle_ccw, angle_cw, center_point.X(), center_point.Y()
 
 # 保留原始Camera2World类
 class Camera2World:
@@ -193,7 +192,7 @@ class coralPositionEstimator:
             # Solve orientation
             ccw, cw, x, y = self.solver.solve(u_center, v_center, box_length)
             results.append([x, y, ccw, cw])
-            print(f"ID: {obj_id}, 逆时针解：{ccw:.2f}°，顺时针解：{cw:.2f}°，中心点坐标：({x:.2f}, {y:.2f})")
+            print(f"ID: {obj_id}, 逆时针解：{np.rad2deg(ccw):.2f}°，顺时针解：{np.rad2deg(cw):.2f}°，中心点坐标：({x:.2f}, {y:.2f})")
         while len(results) < 10:
             results.append([-9999, -9999, -9999, -9999])
         

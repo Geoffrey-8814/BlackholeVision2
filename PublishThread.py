@@ -20,6 +20,13 @@ class publishThread:
                 self.waitEvent.clear()
             for key, publisher in self.publishers.items():
                 output: np.ndarray = self.outputTensors[key].cpu().numpy()
+<<<<<<< HEAD
+                if output.ndim > 1:
+                    output = output.flatten()
+=======
+                if output.ndim == 2:  # Check if the array is 2D
+                    output = output.flatten()  # Flatten the array to 1D
+>>>>>>> 93d5a0d93c61878aa92d0e70e4c6c0f99b871129
                 if output.size == 1:
                     output = output[0]
                     if key == 'latency':

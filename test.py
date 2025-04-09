@@ -16,7 +16,7 @@ camera_matrix = np.array([[905.32671946, 0, 679.6204086],
                             [0, 906.14946047, 331.96782248],
                             [0, 0, 1]])
 distortion = np.array([0.02907126, -0.03349167, 0.00055539, -0.00029301, -0.02025189])
-height = 0.383
+height = 0.843
 coral_radius = 0.055
 coral_length = 0.3
 pitch = np.deg2rad(0)
@@ -47,9 +47,11 @@ while True:
     boxes = results[0].boxes
     for box in boxes:
         print(box.xywh[0])
-        if box.cls == 0:
-            u_center, v_center, box_length = box.xywh[0][0], box.xywh[0][1], box.xywh[0][2]
+        box_np = box.xywh[0].cpu().numpy()
+        if box.cls == 1:
+            u_center, v_center, box_length = box_np[0], box_np[1], box_np[2]
             ccw, cw = solver.solve(u_center, v_center, box_length)
+            print(ccw,cw)
 
             
     # print('boxes:')
