@@ -122,6 +122,18 @@ class configGenerator:
                 ntcore.PubSubOptions(periodic=0, sendAll=True, keepDuplicates=True))
             self.posePublishers[name]['multiTagError'] = self.nt_table.getDoubleTopic(name + '/multiTagError').publish(
                 ntcore.PubSubOptions(periodic=0, sendAll=True, keepDuplicates=True))
+            self.posePublishers[name]['cameraToTagPoses'] = self.nt_table.getDoubleArrayTopic(name + '/cameraToTagPoses').publish(
+                ntcore.PubSubOptions(periodic=0, sendAll=True, keepDuplicates=True))
+            self.posePublishers[name]['fieldToRobotPoses'] = self.nt_table.getDoubleArrayTopic(name + '/fieldToRobotPoses').publish(
+                ntcore.PubSubOptions(periodic=0, sendAll=True, keepDuplicates=True))
+            self.posePublishers[name]['robotToTagPoses'] = self.nt_table.getDoubleArrayTopic(name + '/robotToTagPoses').publish(
+                ntcore.PubSubOptions(periodic=0, sendAll=True, keepDuplicates=True))
+            self.posePublishers[name]['tagErrors'] = self.nt_table.getDoubleArrayTopic(name + '/tagErrors').publish(
+                ntcore.PubSubOptions(periodic=0, sendAll=True, keepDuplicates=True))
+            self.posePublishers[name]['ids'] = self.nt_table.getDoubleArrayTopic(name + '/ids').publish(
+                ntcore.PubSubOptions(periodic=0, sendAll=True, keepDuplicates=True))
+
+            
             self.posePublishers[name]['latency']= self.nt_table.getDoubleTopic(name + '/latency').publish(
                 ntcore.PubSubOptions(periodic=0, sendAll=True, keepDuplicates=True))
         return self.posePublishers
@@ -173,6 +185,11 @@ class configGenerator:
             poseTensors[name] =  Process.getSharedTensors({
                 'multiTagPose': (6),
                 'multiTagError': (1),
+                'cameraToTagPoses': (10, 6),
+                'robotToTagPoses': (10, 6),
+                'fieldToRobotPoses': (10, 6),
+                'tagErrors': (10, 1),
+                'ids': (10, 1),
                 'latency': (1),
             })
             poseEvents[name] = {
@@ -181,7 +198,7 @@ class configGenerator:
             
             objPoseTensors[name] =  Process.getSharedTensors({
                 'coralPoses': (10,4), # [x, y, Theta 1, Theta 2] * 10
-                'coralErrors': (10),
+                'coralErrors': (10,1),
                 'algaePoses': (20), # [x, y] * 10
                 'latency': (1),
             })

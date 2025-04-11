@@ -22,13 +22,12 @@ class publishThread:
                 output: np.ndarray = self.outputTensors[key].cpu().numpy()
                 if output.ndim > 1:
                     output = output.flatten()
-                output = output[output != -9999]  # Filter out -9999 values
-                if output.size == 0:  # Skip if no valid elements remain
-                    continue
-                if output.size == 1:
+                elif output.size == 1:
                     output = output[0]
                     if key == 'latency':
                         output = time.time() - output
+                output = output[output != -9999]  # Filter out -9999 values
+                
                 publisher.set(output)
     def end(self):
         self.running = False

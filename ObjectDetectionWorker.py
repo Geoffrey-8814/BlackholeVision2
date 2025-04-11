@@ -30,11 +30,11 @@ class objectDetectionWorker(process):
         frame = inputTensors['frame'].cpu().numpy()
         
         ids, boxes = _detector(frame)
-        pose = _coralPoseEstimator(ids, boxes)
+        poses, errors = _coralPoseEstimator(ids, boxes)
         
         # print(poseTensor)
-        output = {'coralPoses': pose, # [x, y, Theta 1, Theta 2] * 10 TODO
-                'coralErrors': torch.zeros(10),
+        output = {'coralPoses': poses, # [x, y, Theta 1, Theta 2] * 10 TODO
+                'coralErrors': errors,
                 'algaePoses': torch.zeros(20), # [x, y] * 10
                 'latency': inputTensors['metaData']}
         

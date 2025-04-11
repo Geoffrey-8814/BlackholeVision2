@@ -197,13 +197,14 @@ class coralPositionEstimator:
 
     def __call__(self, ids, boxes):
         results = []
+        errors = []
         for obj_id, box in zip(ids, boxes):
             if obj_id != self.target_id:
                 continue  # Skip if ID does not match the target
 
             u_center = box[0] + box[2] / 2  # x + width / 2
             v_center = box[1] + box[3] / 2  # y + height / 2
-            box_length = max(box[2], box[3])  # Use the larger dimension as box length
+            box_length = box[2]  # Use the larger dimension as box length
 
             # Solve orientation
             ccw, cw, x, y = self.solver.solve(u_center, v_center, box_length)
@@ -218,15 +219,20 @@ class coralPositionEstimator:
             robot_translation = self.transformCoordinates2D(self.cameraPose, object_translation)
 
             results.append([robot_translation.X(), robot_translation.Y(), ccw_robot, cw_robot])
+            errors.append([1/(box[2]*box[3])])
             print(f"ID: {obj_id}, Robot Coordinates: ({robot_translation.X():.2f}, {robot_translation.Y():.2f}), "
                   f"CCW Angle: {np.rad2deg(ccw_robot):.2f}°, CW Angle: {np.rad2deg(cw_robot):.2f}°")
         while len(results) < 10:
             results.append([-9999, -9999, -9999, -9999])
+        while len(errors) < 10:
+            errors.append([-9999])
         
         # Convert results to a tensor
         result_tensor = torch.tensor(results, dtype=torch.float32)
+        error_tensor = torch.tensor(errors, dtype=torch.float32)
+        
 
-        return result_tensor
+        return result_tensor, error_tensor
 
 # 示例用法
 if __name__ == "__main__":
